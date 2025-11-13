@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "DSMA5/grpc/proto";
+
+message Message {
+    repeated string Messages = 1;
+}
+
+message Empty {}
+
+service Replica {
+    rpc GetMessages (Empty) returns (Message) {};
+}
