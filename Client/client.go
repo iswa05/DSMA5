@@ -2,7 +2,6 @@ package main
 
 import (
 	proto "Replica/grpc"
-	"context"
 	"log"
 
 	"google.golang.org/grpc"
@@ -15,14 +14,9 @@ func main() {
 		log.Fatalf("could not connect")
 	}
 
-	client := proto.NewITUdatabaceClient(conn)
+	client := proto.NewReplicaClient(conn)
 
-	students, err := client.GetStudents(context.Background(), &proto.Empty{})
-	if err != nil {
-		log.Fatalf("we recived nothing or failded to send")
-	}
-
-	for _, student := range students.Students {
-		log.Println(" - " + student)
+	if client != nil {
+		log.Fatal("Oh no!")
 	}
 }
