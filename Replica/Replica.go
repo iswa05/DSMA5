@@ -28,7 +28,8 @@ func main() {
 
 func (s *AuctionReplica) start_server() {
 	grpcserver := grpc.NewServer()
-	listener, err := net.Listen("tcp", ":8000")
+	port := ":" + strconv.Itoa(int(8000+id))
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("Server did not work")
 	}
