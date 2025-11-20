@@ -3,6 +3,7 @@ package main
 import (
 	proto "Replica/grpc"
 	"bufio"
+	"context"
 	"log"
 	"net"
 	"os"
@@ -40,6 +41,10 @@ func (s *AuctionReplica) start_server() {
 	if err != nil {
 		log.Fatalf("this did not work")
 	}
+}
+
+func (s *AuctionReplica) Ping(ctx context.Context, request *proto.Empty) (*proto.Empty, error) {
+	return &proto.Empty{}, nil
 }
 
 func readIdFromUser() int32 {

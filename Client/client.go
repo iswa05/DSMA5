@@ -3,6 +3,7 @@ package main
 import (
 	proto "Replica/grpc"
 	"bufio"
+	"context"
 	"log"
 	"math/rand"
 	"os"
@@ -22,33 +23,36 @@ func main() {
 	id = readIdFromUser()
 
 	portId = rand.Intn(2)
-	conn, err := connectToServers()
+	client, err := connectToServers()
+
 	if err != nil {
 		log.Fatal("Could not connect to any")
 	}
 
-	client := proto.NewReplicaClient(conn)
-
 	if client != nil {
-		log.Fatal("Oh no!")
+		log.Fatal("We are done")
 	}
 }
 
-func connectToServers() (*grpc.ClientConn, error) {
+func connectToServers() (proto.ReplicaClient, error) {
 	var conn *grpc.ClientConn
 	var err error
 	for i := 0; i < 2; i++ {
 		log.Println("Trying to connect to " + ports[portId])
-		conn, err = grpc.NewClient("localhost:"+ports[portId], grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err = grpc.NewClient("localhost"+ports[portId], grpc.WithTransportCredentials(insecure.NewCredentials()))
+		client := proto.NewReplicaClient(conn)
+
+		_, err := client.Ping(context.Background(), &proto.Empty{})
 
 		if err == nil {
-			return conn, nil
+			return client, nil
 		}
+
 		log.Println("could not connect to " + ports[portId])
 		portId = (portId + 1) % 2
 	}
 
-	return conn, err
+	return nil, err
 }
 
 func readIdFromUser() int32 {

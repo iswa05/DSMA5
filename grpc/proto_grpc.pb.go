@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Replica_GetMessages_FullMethodName = "/Replica/GetMessages"
+	Replica_Ping_FullMethodName        = "/Replica/Ping"
 )
 
 // ReplicaClient is the client API for Replica service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReplicaClient interface {
 	GetMessages(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Message, error)
+	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type replicaClient struct {
@@ -47,11 +49,22 @@ func (c *replicaClient) GetMessages(ctx context.Context, in *Empty, opts ...grpc
 	return out, nil
 }
 
+func (c *replicaClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Replica_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReplicaServer is the server API for Replica service.
 // All implementations must embed UnimplementedReplicaServer
 // for forward compatibility.
 type ReplicaServer interface {
 	GetMessages(context.Context, *Empty) (*Message, error)
+	Ping(context.Context, *Empty) (*Empty, error)
 	mustEmbedUnimplementedReplicaServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedReplicaServer struct{}
 
 func (UnimplementedReplicaServer) GetMessages(context.Context, *Empty) (*Message, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMessages not implemented")
+}
+func (UnimplementedReplicaServer) Ping(context.Context, *Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedReplicaServer) mustEmbedUnimplementedReplicaServer() {}
 func (UnimplementedReplicaServer) testEmbeddedByValue()                 {}
@@ -104,6 +120,24 @@ func _Replica_GetMessages_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Replica_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplicaServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Replica_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplicaServer).Ping(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Replica_ServiceDesc is the grpc.ServiceDesc for Replica service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var Replica_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMessages",
 			Handler:    _Replica_GetMessages_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _Replica_Ping_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

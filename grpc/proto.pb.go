@@ -108,9 +108,10 @@ const file_proto_proto_rawDesc = "" +
 	"\vproto.proto\"%\n" +
 	"\aMessage\x12\x1a\n" +
 	"\bMessages\x18\x01 \x03(\tR\bMessages\"\a\n" +
-	"\x05Empty2,\n" +
+	"\x05Empty2F\n" +
 	"\aReplica\x12!\n" +
-	"\vGetMessages\x12\x06.Empty\x1a\b.Message\"\x00B\x12Z\x10DSMA5/grpc/protob\x06proto3"
+	"\vGetMessages\x12\x06.Empty\x1a\b.Message\"\x00\x12\x18\n" +
+	"\x04Ping\x12\x06.Empty\x1a\x06.Empty\"\x00B\x12Z\x10DSMA5/grpc/protob\x06proto3"
 
 var (
 	file_proto_proto_rawDescOnce sync.Once
@@ -131,9 +132,11 @@ var file_proto_proto_goTypes = []any{
 }
 var file_proto_proto_depIdxs = []int32{
 	1, // 0: Replica.GetMessages:input_type -> Empty
-	0, // 1: Replica.GetMessages:output_type -> Message
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	1, // 1: Replica.Ping:input_type -> Empty
+	0, // 2: Replica.GetMessages:output_type -> Message
+	1, // 3: Replica.Ping:output_type -> Empty
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

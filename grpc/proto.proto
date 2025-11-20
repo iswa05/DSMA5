@@ -9,4 +9,5 @@ message Empty {}
 
 service Replica {
     rpc GetMessages (Empty) returns (Message) {};
+    rpc Ping (Empty) returns (Empty) {};
 }
