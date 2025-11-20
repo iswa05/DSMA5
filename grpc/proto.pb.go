@@ -21,27 +21,28 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Message struct {
+type Bid struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Messages      []string               `protobuf:"bytes,1,rep,name=Messages,proto3" json:"Messages,omitempty"`
+	ClientId      int32                  `protobuf:"varint,1,opt,name=clientId,proto3" json:"clientId,omitempty"`
+	Amount        int32                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Message) Reset() {
-	*x = Message{}
+func (x *Bid) Reset() {
+	*x = Bid{}
 	mi := &file_proto_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Message) String() string {
+func (x *Bid) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Message) ProtoMessage() {}
+func (*Bid) ProtoMessage() {}
 
-func (x *Message) ProtoReflect() protoreflect.Message {
+func (x *Bid) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -53,16 +54,127 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Message.ProtoReflect.Descriptor instead.
-func (*Message) Descriptor() ([]byte, []int) {
+// Deprecated: Use Bid.ProtoReflect.Descriptor instead.
+func (*Bid) Descriptor() ([]byte, []int) {
 	return file_proto_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Message) GetMessages() []string {
+func (x *Bid) GetClientId() int32 {
 	if x != nil {
-		return x.Messages
+		return x.ClientId
 	}
-	return nil
+	return 0
+}
+
+func (x *Bid) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+type Ack struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       string                 `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Ack) Reset() {
+	*x = Ack{}
+	mi := &file_proto_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Ack) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Ack) ProtoMessage() {}
+
+func (x *Ack) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Ack.ProtoReflect.Descriptor instead.
+func (*Ack) Descriptor() ([]byte, []int) {
+	return file_proto_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Ack) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+type Result struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      int32                  `protobuf:"varint,1,opt,name=clientId,proto3" json:"clientId,omitempty"`
+	HigestBit     int32                  `protobuf:"varint,2,opt,name=higestBit,proto3" json:"higestBit,omitempty"`
+	AuctionIsOver bool                   `protobuf:"varint,3,opt,name=auctionIsOver,proto3" json:"auctionIsOver,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Result) Reset() {
+	*x = Result{}
+	mi := &file_proto_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Result) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Result) ProtoMessage() {}
+
+func (x *Result) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Result.ProtoReflect.Descriptor instead.
+func (*Result) Descriptor() ([]byte, []int) {
+	return file_proto_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Result) GetClientId() int32 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+func (x *Result) GetHigestBit() int32 {
+	if x != nil {
+		return x.HigestBit
+	}
+	return 0
+}
+
+func (x *Result) GetAuctionIsOver() bool {
+	if x != nil {
+		return x.AuctionIsOver
+	}
+	return false
 }
 
 type Empty struct {
@@ -73,7 +185,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_proto_proto_msgTypes[1]
+	mi := &file_proto_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -85,7 +197,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_proto_msgTypes[1]
+	mi := &file_proto_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -98,20 +210,28 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_proto_proto_rawDescGZIP(), []int{1}
+	return file_proto_proto_rawDescGZIP(), []int{3}
 }
 
 var File_proto_proto protoreflect.FileDescriptor
 
 const file_proto_proto_rawDesc = "" +
 	"\n" +
-	"\vproto.proto\"%\n" +
-	"\aMessage\x12\x1a\n" +
-	"\bMessages\x18\x01 \x03(\tR\bMessages\"\a\n" +
-	"\x05Empty2F\n" +
-	"\aReplica\x12!\n" +
-	"\vGetMessages\x12\x06.Empty\x1a\b.Message\"\x00\x12\x18\n" +
-	"\x04Ping\x12\x06.Empty\x1a\x06.Empty\"\x00B\x12Z\x10DSMA5/grpc/protob\x06proto3"
+	"\vproto.proto\"9\n" +
+	"\x03bid\x12\x1a\n" +
+	"\bclientId\x18\x01 \x01(\x05R\bclientId\x12\x16\n" +
+	"\x06amount\x18\x02 \x01(\x05R\x06amount\"\x1f\n" +
+	"\x03ack\x12\x18\n" +
+	"\aoutcome\x18\x01 \x01(\tR\aoutcome\"h\n" +
+	"\x06result\x12\x1a\n" +
+	"\bclientId\x18\x01 \x01(\x05R\bclientId\x12\x1c\n" +
+	"\thigestBit\x18\x02 \x01(\x05R\thigestBit\x12$\n" +
+	"\rauctionIsOver\x18\x03 \x01(\bR\rauctionIsOver\"\a\n" +
+	"\x05empty2U\n" +
+	"\aReplica\x12\x18\n" +
+	"\x04Ping\x12\x06.empty\x1a\x06.empty\"\x00\x12\x13\n" +
+	"\x03Bid\x12\x04.bid\x1a\x04.ack\"\x00\x12\x1b\n" +
+	"\x06Result\x12\x06.empty\x1a\a.result\"\x00B\x12Z\x10DSMA5/grpc/protob\x06proto3"
 
 var (
 	file_proto_proto_rawDescOnce sync.Once
@@ -125,18 +245,22 @@ func file_proto_proto_rawDescGZIP() []byte {
 	return file_proto_proto_rawDescData
 }
 
-var file_proto_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_proto_goTypes = []any{
-	(*Message)(nil), // 0: Message
-	(*Empty)(nil),   // 1: Empty
+	(*Bid)(nil),    // 0: bid
+	(*Ack)(nil),    // 1: ack
+	(*Result)(nil), // 2: result
+	(*Empty)(nil),  // 3: empty
 }
 var file_proto_proto_depIdxs = []int32{
-	1, // 0: Replica.GetMessages:input_type -> Empty
-	1, // 1: Replica.Ping:input_type -> Empty
-	0, // 2: Replica.GetMessages:output_type -> Message
-	1, // 3: Replica.Ping:output_type -> Empty
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	3, // 0: Replica.Ping:input_type -> empty
+	0, // 1: Replica.Bid:input_type -> bid
+	3, // 2: Replica.Result:input_type -> empty
+	3, // 3: Replica.Ping:output_type -> empty
+	1, // 4: Replica.Bid:output_type -> ack
+	2, // 5: Replica.Result:output_type -> result
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -153,7 +277,7 @@ func file_proto_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_proto_rawDesc), len(file_proto_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

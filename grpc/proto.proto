@@ -1,13 +1,25 @@
 syntax = "proto3";
 option go_package = "DSMA5/grpc/proto";
 
-message Message {
-    repeated string Messages = 1;
+message bid {
+    int32 clientId = 1;
+    int32 amount = 2;
 }
 
-message Empty {}
+message ack {
+    string outcome = 1;
+}
+
+message result {
+    int32 clientId = 1;
+    int32 higestBit = 2;
+    bool auctionIsOver = 3;
+}
+ 
+message empty {}
 
 service Replica {
-    rpc GetMessages (Empty) returns (Message) {};
-    rpc Ping (Empty) returns (Empty) {};
+    rpc Ping (empty) returns (empty) {};
+    rpc Bid (bid) returns (ack) {};
+    rpc Result (empty) returns (result) {};
 }
