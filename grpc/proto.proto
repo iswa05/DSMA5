@@ -12,8 +12,9 @@ message ack {
 
 message result {
     int32 clientId = 1;
-    int32 higestBit = 2;
-    bool auctionIsOver = 3;
+    int32 highestBid = 2;
+    int32 auctionId = 3;
+    bool auctionIsOver = 4;
 }
  
 message empty {}

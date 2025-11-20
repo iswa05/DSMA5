@@ -16,22 +16,51 @@ import (
 
 var id int32
 var portId int
-
 var ports = []string{":8001", ":8002"}
+var client proto.ReplicaClient
 
 func main() {
 	id = readIdFromUser()
 
 	portId = rand.Intn(2)
-	client, err := connectToServers()
+	var err error
+	client, err = connectToServers()
 
 	if err != nil {
 		log.Fatal("Could not connect to any")
 	}
 
-	if client != nil {
-		log.Fatal("We are done")
+	for {
+		log.Println("Enter a commandArgs: \n bid <amount> \n result")
+		var userInput = readFromUser()
+		var commandArgs = strings.Split(userInput, " ")
+
+		if len(commandArgs) > 2 || len(commandArgs) < 1 {
+			log.Println("Invalid commandArgs or commandArgs format")
+			continue
+		}
+
+		if commandArgs[0] == "bid" && len(commandArgs) == 2 {
+			// BID
+
+			var amount, err = strconv.Atoi(commandArgs[1])
+			if err != nil {
+				log.Println("Invalid amount, must be an integer")
+				continue
+			}
+
+			makeBid(int32(amount))
+
+		} else if commandArgs[0] == "result" {
+			// RESULT
+			getResult()
+
+		} else {
+			log.Println("Invalid commandArgs or commandArgs format")
+			continue
+		}
 	}
+
 }
 
 func connectToServers() (proto.ReplicaClient, error) {
@@ -52,6 +81,7 @@ func connectToServers() (proto.ReplicaClient, error) {
 		portId = (portId + 1) % 2
 	}
 
+	log.Fatalln("All servers are down")
 	return nil, err
 }
 
@@ -83,4 +113,38 @@ func readFromUser() string {
 	inputString = strings.TrimSuffix(inputString, "\r")
 
 	return inputString
+}
+
+func makeBid(amount int32) {
+	bid, err := client.Bid(context.Background(), &proto.Bid{ClientId: id, Amount: amount})
+	if err != nil {
+		client, err = connectToServers()
+
+		if err == nil {
+			makeBid(amount)
+		}
+		return
+	}
+	log.Println("Bid outcome was:", bid.Outcome)
+}
+
+func getResult() {
+	result, err := client.Result(context.Background(), &proto.Empty{})
+	if err != nil {
+		client, err = connectToServers()
+		if err == nil {
+			getResult()
+		}
+		return
+	}
+	if result.AuctionId == -1 {
+		log.Println("No auctions have been held")
+		return
+	}
+
+	if result.AuctionIsOver {
+		log.Println("Auction", result.AuctionId, "is over with client", result.ClientId, "with the winning bet of", result.HighestBid)
+	} else {
+		log.Println("Auction", result.AuctionId, "is ongoing with highest bet of", result.HighestBid, "from client", result.ClientId)
+	}
 }

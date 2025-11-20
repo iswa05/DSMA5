@@ -9,8 +9,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type AuctionReplica struct {
@@ -21,45 +24,118 @@ var id int32
 var isLeader bool
 var auctionDuration int = 20
 
-type auction struct {
+type Auction struct {
 	clientId   int32
 	highestBid int32
 	isOver     bool
 }
 
-var auctions []auction
+type AuctionManager struct {
+	sync.Mutex
+	auctions []Auction
+}
+
+var manager AuctionManager
+var otherReplica proto.ReplicaClient
 
 func main() {
 	id = readIdFromUser()
 	server := &AuctionReplica{}
 
+	connectToOtherReplica()
 	server.start_server()
 }
 
+func AuctionTimer() {
+	time.Sleep(time.Second * time.Duration(auctionDuration))
+
+	manager.Lock()
+	manager.auctions[len(manager.auctions)-1].isOver = true
+
+	log.Println("Auction is over and bidClient", manager.auctions[len(manager.auctions)-1].clientId, "won with", manager.auctions[len(manager.auctions)-1].highestBid)
+
+	manager.Unlock()
+}
+
 func (s *AuctionReplica) Bid(ctx context.Context, bid *proto.Bid) (*proto.Ack, error) {
+	if isLeader {
+		return handleBid(bid)
+	}
 
-	// create new auction if no action is in progres
-	lengOfAuctions := len(auctions)
-	if lengOfAuctions < 1 || auctions[lengOfAuctions-1].isOver {
+	ack, err := otherReplica.Bid(ctx, bid)
+	if err != nil {
+		isLeader = true
+		return handleBid(bid)
+	}
 
-		auction := &auction{
+	return ack, nil
+}
+
+func handleBid(bid *proto.Bid) (*proto.Ack, error) {
+	manager.Lock()
+
+	// create new Auction if no action is in progres
+	lengthOfAuctions := len(manager.auctions)
+	if lengthOfAuctions < 1 || manager.auctions[lengthOfAuctions-1].isOver {
+		auction := &Auction{
 			clientId:   bid.GetClientId(),
 			highestBid: bid.GetAmount(),
 			isOver:     false}
-		auctions = append(auctions, *auction)
+		manager.auctions = append(manager.auctions, *auction)
 
-		// start new timer
+		manager.Unlock()
+		go AuctionTimer()
+		return &proto.Ack{Outcome: "success"}, nil
 	}
 
-	// update auction
+	// update Auction
+	if manager.auctions[lengthOfAuctions-1].highestBid < bid.GetAmount() {
 
-	return &proto.Ack{}, nil
+		manager.auctions[lengthOfAuctions-1].clientId = bid.GetClientId()
+		manager.auctions[lengthOfAuctions-1].highestBid = bid.GetAmount()
+
+		manager.Unlock()
+		return &proto.Ack{Outcome: "success"}, nil
+	} else {
+		manager.Unlock()
+		return &proto.Ack{Outcome: "fail"}, nil
+	}
 }
 
 func (s *AuctionReplica) Result(ctx context.Context, request *proto.Empty) (*proto.Result, error) {
 	// handle result request
+	if isLeader {
+		return HandleResult()
+	}
 
-	return &proto.Result{}, nil
+	res, err := otherReplica.Result(ctx, request)
+	if err != nil {
+		isLeader = true
+		return HandleResult()
+	}
+
+	return res, nil
+}
+
+func HandleResult() (*proto.Result, error) {
+	manager.Lock()
+
+	lengthOfAuctions := len(manager.auctions)
+	log.Println("Auctions:", lengthOfAuctions)
+	if lengthOfAuctions == 0 {
+		log.Println("No auctions have been held")
+		manager.Unlock()
+		return &proto.Result{AuctionId: -1}, nil
+	}
+
+	var auctionResult = &proto.Result{ClientId: manager.auctions[lengthOfAuctions-1].clientId,
+		HighestBid:    manager.auctions[lengthOfAuctions-1].highestBid,
+		AuctionIsOver: manager.auctions[lengthOfAuctions-1].isOver,
+		AuctionId:     int32(lengthOfAuctions - 1),
+	}
+
+	manager.Unlock()
+	return auctionResult, nil
 }
 
 func (s *AuctionReplica) start_server() {
@@ -113,4 +189,14 @@ func readFromUser() string {
 	inputString = strings.TrimSuffix(inputString, "\r")
 
 	return inputString
+}
+
+func connectToOtherReplica() {
+	otherReplicaPort := (id+1)%2 + 8000
+	otherReplicaPortString := ":" + strconv.Itoa(int(otherReplicaPort))
+	conn, err := grpc.NewClient("localhost"+otherReplicaPortString, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("Could not connect to other replica")
+	}
+	otherReplica = proto.NewReplicaClient(conn)
 }
