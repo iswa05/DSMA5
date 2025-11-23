@@ -43,7 +43,7 @@ func main() {
 	server := &AuctionReplica{}
 
 	connectToOtherReplica()
-	server.start_server()
+	server.startServer()
 }
 
 func AuctionTimer() {
@@ -59,19 +59,19 @@ func AuctionTimer() {
 
 func (s *AuctionReplica) Bid(ctx context.Context, bid *proto.Bid) (*proto.Ack, error) {
 	if isLeader {
-		return handleBid(bid)
+		return handleBid(ctx, bid)
 	}
 
 	ack, err := otherReplica.Bid(ctx, bid)
 	if err != nil {
 		isLeader = true
-		return handleBid(bid)
+		return handleBid(ctx, bid)
 	}
 
 	return ack, nil
 }
 
-func handleBid(bid *proto.Bid) (*proto.Ack, error) {
+func handleBid(ctx context.Context, bid *proto.Bid) (*proto.Ack, error) {
 	manager.Lock()
 
 	// create new Auction if no action is in progres
@@ -85,6 +85,8 @@ func handleBid(bid *proto.Bid) (*proto.Ack, error) {
 
 		manager.Unlock()
 		go AuctionTimer()
+		SyncReplica(ctx, bid)
+
 		return &proto.Ack{Outcome: "success"}, nil
 	}
 
@@ -95,6 +97,7 @@ func handleBid(bid *proto.Bid) (*proto.Ack, error) {
 		manager.auctions[lengthOfAuctions-1].highestBid = bid.GetAmount()
 
 		manager.Unlock()
+		SyncReplica(ctx, bid)
 		return &proto.Ack{Outcome: "success"}, nil
 	} else {
 		manager.Unlock()
@@ -138,7 +141,7 @@ func HandleResult() (*proto.Result, error) {
 	return auctionResult, nil
 }
 
-func (s *AuctionReplica) start_server() {
+func (s *AuctionReplica) startServer() {
 	grpcserver := grpc.NewServer()
 	port := ":" + strconv.Itoa(int(8000+id))
 	listener, err := net.Listen("tcp", port)
@@ -199,4 +202,62 @@ func connectToOtherReplica() {
 		log.Println("Could not connect to other replica")
 	}
 	otherReplica = proto.NewReplicaClient(conn)
+}
+
+func (s *AuctionReplica) BidMemorySync(ctx context.Context, state *proto.MemoryState) (*proto.Empty, error) {
+	log.Println("Syncing auction:", state.AuctionId)
+
+	if isLeader {
+		return &proto.Empty{}, nil
+	}
+
+	manager.Lock()
+
+	auction := &Auction{
+		clientId:   state.GetAuctionClientId(),
+		highestBid: state.GetAuctionHighestBid(),
+		isOver:     state.GetAuctionIsOver(),
+	}
+
+	var auctionLength = int32(len(manager.auctions))
+	var stateAuctionId = state.GetAuctionId()
+
+	// If the received auction already has started
+	if auctionLength > stateAuctionId {
+		manager.auctions[stateAuctionId] = *auction
+		manager.Unlock()
+		return &proto.Empty{}, nil
+	}
+
+	// If the received auction is a new auction
+	// There may be possible issues where a new auction sync is delayed and another new auction sync overtakes
+	manager.auctions = append(manager.auctions, *auction)
+	go AuctionTimer()
+	manager.Unlock()
+
+	return &proto.Empty{}, nil
+}
+
+func SyncReplica(ctx context.Context, bid *proto.Bid) {
+	log.Println("SyncReplica called")
+	manager.Lock()
+	var lengthOfAuctions = len(manager.auctions)
+
+	state := &proto.MemoryState{
+		AuctionId:         int32(lengthOfAuctions - 1),
+		AuctionClientId:   bid.GetClientId(),
+		AuctionHighestBid: bid.GetAmount(),
+		AuctionIsOver:     manager.auctions[lengthOfAuctions-1].isOver,
+	}
+	manager.Unlock()
+
+	log.Println("State saved")
+
+	_, err := otherReplica.BidMemorySync(ctx, state)
+	if err != nil {
+		log.Fatalln(err.Error())
+		return
+	}
+
+	log.Println("Auctions synced")
 }

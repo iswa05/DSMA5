@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Replica_Ping_FullMethodName   = "/Replica/Ping"
-	Replica_Bid_FullMethodName    = "/Replica/Bid"
-	Replica_Result_FullMethodName = "/Replica/Result"
+	Replica_Ping_FullMethodName          = "/Replica/Ping"
+	Replica_Bid_FullMethodName           = "/Replica/Bid"
+	Replica_Result_FullMethodName        = "/Replica/Result"
+	Replica_BidMemorySync_FullMethodName = "/Replica/BidMemorySync"
 )
 
 // ReplicaClient is the client API for Replica service.
@@ -31,6 +32,7 @@ type ReplicaClient interface {
 	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	Bid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (*Ack, error)
 	Result(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Result, error)
+	BidMemorySync(ctx context.Context, in *MemoryState, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type replicaClient struct {
@@ -71,6 +73,16 @@ func (c *replicaClient) Result(ctx context.Context, in *Empty, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *replicaClient) BidMemorySync(ctx context.Context, in *MemoryState, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Replica_BidMemorySync_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReplicaServer is the server API for Replica service.
 // All implementations must embed UnimplementedReplicaServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type ReplicaServer interface {
 	Ping(context.Context, *Empty) (*Empty, error)
 	Bid(context.Context, *Bid) (*Ack, error)
 	Result(context.Context, *Empty) (*Result, error)
+	BidMemorySync(context.Context, *MemoryState) (*Empty, error)
 	mustEmbedUnimplementedReplicaServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedReplicaServer) Bid(context.Context, *Bid) (*Ack, error) {
 }
 func (UnimplementedReplicaServer) Result(context.Context, *Empty) (*Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Result not implemented")
+}
+func (UnimplementedReplicaServer) BidMemorySync(context.Context, *MemoryState) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BidMemorySync not implemented")
 }
 func (UnimplementedReplicaServer) mustEmbedUnimplementedReplicaServer() {}
 func (UnimplementedReplicaServer) testEmbeddedByValue()                 {}
@@ -172,6 +188,24 @@ func _Replica_Result_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Replica_BidMemorySync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MemoryState)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplicaServer).BidMemorySync(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Replica_BidMemorySync_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplicaServer).BidMemorySync(ctx, req.(*MemoryState))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Replica_ServiceDesc is the grpc.ServiceDesc for Replica service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var Replica_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Result",
 			Handler:    _Replica_Result_Handler,
+		},
+		{
+			MethodName: "BidMemorySync",
+			Handler:    _Replica_BidMemorySync_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
