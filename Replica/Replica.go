@@ -195,8 +195,14 @@ func readFromUser() string {
 }
 
 func connectToOtherReplica() {
-	otherReplicaPort := (id+1)%2 + 8000
-	otherReplicaPortString := ":" + strconv.Itoa(int(otherReplicaPort))
+	var otherReplicaPort int
+	if id == 1 {
+		otherReplicaPort = 8002
+	} else if id == 2 {
+		otherReplicaPort = 8001
+	}
+
+	otherReplicaPortString := ":" + strconv.Itoa(otherReplicaPort)
 	conn, err := grpc.NewClient("localhost"+otherReplicaPortString, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Could not connect to other replica")
