@@ -22,17 +22,18 @@ type AuctionReplica struct {
 }
 
 var (
-	id                 int32
-	isLeader           bool
-	auctionDuration    = 20
-	manager            = &AuctionManager{}
-	otherReplica       proto.ReplicaClient
-	processedMu        sync.Mutex
-	processedRequests  = make(map[string]*proto.Ack) // key: clientId-lamport
-	auctionTimers      = make(map[int32]*time.Timer)
-	timerMutex         sync.Mutex
-	serverLamport      int64
-	serverLamportMutex sync.Mutex
+	id                     int32
+	isLeader               bool
+	auctionDuration        = 20
+	manager                = &AuctionManager{}
+	otherReplica           proto.ReplicaClient
+	processedMu            sync.Mutex
+	processedRequests      = make(map[string]*proto.Ack) // key: clientId-lamport
+	auctionTimers          = make(map[int32]*time.Timer)
+	timerMutex             sync.Mutex
+	serverLamport          int64
+	serverLamportMutex     sync.Mutex
+	activeAuctionOperation sync.Mutex
 )
 
 type Auction struct {
@@ -88,6 +89,9 @@ func connectToOtherReplica() {
 }
 
 func (s *AuctionReplica) Bid(ctx context.Context, bid *proto.Bid) (*proto.Ack, error) {
+	activeAuctionOperation.Lock()
+	defer activeAuctionOperation.Unlock()
+
 	if !isLeader && otherReplica != nil {
 		ack, err := otherReplica.Bid(ctx, bid)
 		if err == nil {
@@ -144,6 +148,9 @@ func handleBid(bid *proto.Bid) (outcome string, auctionId int32) {
 }
 
 func (s *AuctionReplica) Result(ctx context.Context, _ *proto.Empty) (*proto.Result, error) {
+	activeAuctionOperation.Lock()
+	defer activeAuctionOperation.Unlock()
+
 	if !isLeader && otherReplica != nil {
 		res, err := otherReplica.Result(ctx, &proto.Empty{})
 		if err == nil {
