@@ -7,3 +7,5 @@ Mandatory Activity 5 in Distributed Systems, BSc (Autumn 2025) at IT University 
 3. use the program by typing in the commands:
 - use 'bid <amount>' to make a new bid. If no action is ongoing, a new one will start and will be open for 20 seconds
 - use 'result' to query what the current result of the newest auction.
+
+You can use control + c to kill a replica and therefore simulating a crash
