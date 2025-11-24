@@ -22,17 +22,17 @@ type AuctionReplica struct {
 }
 
 var (
-	id                int32
-	isLeader          bool
-	auctionDuration   = 20
-	manager           = &AuctionManager{}
-	otherReplica      proto.ReplicaClient
-	processedMu       sync.Mutex
-	processedRequests = make(map[string]*proto.Ack) // key: clientId-lamport
-	auctionTimers     = make(map[int32]*time.Timer)
-	timerMutex        sync.Mutex
-	serverLamport     int64
-	serverLamMutex    sync.Mutex
+	id                 int32
+	isLeader           bool
+	auctionDuration    = 20
+	manager            = &AuctionManager{}
+	otherReplica       proto.ReplicaClient
+	processedMu        sync.Mutex
+	processedRequests  = make(map[string]*proto.Ack) // key: clientId-lamport
+	auctionTimers      = make(map[int32]*time.Timer)
+	timerMutex         sync.Mutex
+	serverLamport      int64
+	serverLamportMutex sync.Mutex
 )
 
 type Auction struct {
@@ -53,10 +53,10 @@ func main() {
 	server.startServer()
 }
 
-func updateLamport(incoming int64) int64 {
-	serverLamMutex.Lock()
-	defer serverLamMutex.Unlock()
-	serverLamport = maxInt(serverLamport, incoming) + 1
+func updateLamport(incomingRequest int64) int64 {
+	serverLamportMutex.Lock()
+	defer serverLamportMutex.Unlock()
+	serverLamport = maxInt(serverLamport, incomingRequest) + 1
 	return serverLamport
 }
 
@@ -94,6 +94,7 @@ func (s *AuctionReplica) Bid(ctx context.Context, bid *proto.Bid) (*proto.Ack, e
 			return ack, nil
 		}
 		isLeader = true
+		log.Printf("Replica %d became leader\n", id)
 	}
 
 	serverTs := updateLamport(bid.Lamport)
@@ -149,6 +150,7 @@ func (s *AuctionReplica) Result(ctx context.Context, _ *proto.Empty) (*proto.Res
 			return res, nil
 		}
 		isLeader = true
+		log.Printf("Replica %d became leader\n", id)
 	}
 
 	manager.Lock()
@@ -197,6 +199,7 @@ func (s *AuctionReplica) BidMemorySync(_ context.Context, state *proto.MemorySta
 		return &proto.Empty{}, nil
 	}
 
+	log.Printf("Backup replica %d received sync for auction %d from leader\n", id, state.AuctionId)
 	manager.Lock()
 	if int(state.AuctionId) < len(manager.auctions) {
 		manager.auctions[state.AuctionId] = Auction{
@@ -241,6 +244,10 @@ func SyncReplica(ctx context.Context, bid *proto.Bid, outcome string, auctionId 
 		_, err := otherReplica.BidMemorySync(ctx, state)
 		if err != nil {
 			log.Println("Replica sync failed:", err)
+		} else {
+			otherId := 3 - id
+			log.Printf("Leader (replica %d) completed sync to backup (replica %d) for auction %d\n",
+				id, otherId, auctionId)
 		}
 	}
 }

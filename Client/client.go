@@ -72,6 +72,7 @@ func connectToServers() (proto.ReplicaClient, error) {
 			c := proto.NewReplicaClient(conn)
 			_, err = c.Ping(context.Background(), &proto.Empty{})
 			if err == nil {
+				log.Println("Client connected to port", ports[portId])
 				return c, nil
 			}
 		}
@@ -93,7 +94,6 @@ func makeBid(amount int32) {
 		return
 	}
 
-	// update lamport safely
 	lamMutex.Lock()
 	if ack.Lamport >= lamport {
 		lamport = ack.Lamport + 1
