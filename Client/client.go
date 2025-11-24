@@ -9,123 +9,100 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var id int32
-var portId int
-var ports = []string{":8001", ":8002"}
-var client proto.ReplicaClient
+var (
+	id       int32
+	ports    = []string{":8001", ":8002"}
+	portId   int
+	client   proto.ReplicaClient
+	lamport  int64
+	lamMutex sync.Mutex
+)
 
 func main() {
 	id = readIdFromUser()
+	portId = rand.Intn(len(ports))
 
-	portId = rand.Intn(2)
 	var err error
 	client, err = connectToServers()
-
 	if err != nil {
-		log.Fatal("Could not connect to any")
+		log.Fatal("Could not connect to any server:", err)
 	}
 
 	for {
-		log.Println("Enter a commandArgs: \n bid <amount> \n result")
-		var userInput = readFromUser()
-		var commandArgs = strings.Split(userInput, " ")
-
-		if len(commandArgs) > 2 || len(commandArgs) < 1 {
-			log.Println("Invalid commandArgs or commandArgs format")
+		log.Println("Enter a command: \n bid <amount> \n result")
+		input := readFromUser()
+		args := strings.Split(input, " ")
+		if len(args) < 1 || len(args) > 2 {
+			log.Println("Invalid command format")
 			continue
 		}
 
-		if commandArgs[0] == "bid" && len(commandArgs) == 2 {
-			// BID
-
-			var amount, err = strconv.Atoi(commandArgs[1])
+		switch args[0] {
+		case "bid":
+			if len(args) != 2 {
+				log.Println("Usage: bid <amount>")
+				continue
+			}
+			amount, err := strconv.Atoi(args[1])
 			if err != nil {
 				log.Println("Invalid amount, must be an integer")
 				continue
 			}
-
 			makeBid(int32(amount))
-
-		} else if commandArgs[0] == "result" {
-			// RESULT
+		case "result":
 			getResult()
-
-		} else {
-			log.Println("Invalid commandArgs or commandArgs format")
-			continue
+		default:
+			log.Println("Unknown command")
 		}
 	}
-
 }
 
 func connectToServers() (proto.ReplicaClient, error) {
 	var conn *grpc.ClientConn
 	var err error
-	for i := 0; i < 2; i++ {
-		log.Println("Trying to connect to " + ports[portId])
+	for i := 0; i < len(ports); i++ {
 		conn, err = grpc.NewClient("localhost"+ports[portId], grpc.WithTransportCredentials(insecure.NewCredentials()))
-		client := proto.NewReplicaClient(conn)
-
-		_, err := client.Ping(context.Background(), &proto.Empty{})
-
 		if err == nil {
-			return client, nil
+			c := proto.NewReplicaClient(conn)
+			_, err = c.Ping(context.Background(), &proto.Empty{})
+			if err == nil {
+				return c, nil
+			}
 		}
-
-		log.Println("could not connect to " + ports[portId])
-		portId = (portId + 1) % 2
+		portId = (portId + 1) % len(ports)
 	}
-
-	log.Fatalln("All servers are down")
 	return nil, err
 }
 
-func readIdFromUser() int32 {
-	var inputInt int
-	log.Println("Please enter a unique id")
-	for {
-		var err error
-		inputString := readFromUser()
-		inputInt, err = strconv.Atoi(inputString)
-		if err != nil {
-			log.Println("Invalid input type, please enter a valid integer")
-			continue
-		}
-
-		if inputInt > 0 {
-			return int32(inputInt)
-		}
-
-		log.Println("Invalid id value, must be positive")
-	}
-
-}
-
-func readFromUser() string {
-	reader := bufio.NewReader(os.Stdin)
-	inputString, _ := reader.ReadString('\n')
-	inputString = strings.TrimSuffix(inputString, "\n")
-	inputString = strings.TrimSuffix(inputString, "\r")
-
-	return inputString
-}
-
 func makeBid(amount int32) {
-	bid, err := client.Bid(context.Background(), &proto.Bid{ClientId: id, Amount: amount})
+	lam := nextLamport()
+	bidMsg := &proto.Bid{ClientId: id, Amount: amount, Lamport: lam}
+
+	ack, err := client.Bid(context.Background(), bidMsg)
 	if err != nil {
 		client, err = connectToServers()
-
 		if err == nil {
 			makeBid(amount)
 		}
 		return
 	}
-	log.Println("Bid outcome was:", bid.Outcome)
+
+	// update lamport safely
+	lamMutex.Lock()
+	if ack.Lamport >= lamport {
+		lamport = ack.Lamport + 1
+	} else {
+		lamport++
+	}
+	lamMutex.Unlock()
+
+	log.Println("Bid outcome:", ack.Outcome)
 }
 
 func getResult() {
@@ -137,14 +114,42 @@ func getResult() {
 		}
 		return
 	}
+
 	if result.AuctionId == -1 {
 		log.Println("No auctions have been held")
 		return
 	}
 
+	status := "ongoing"
 	if result.AuctionIsOver {
-		log.Println("Auction", result.AuctionId, "is over with client", result.ClientId, "with the winning bet of", result.HighestBid)
-	} else {
-		log.Println("Auction", result.AuctionId, "is ongoing with highest bet of", result.HighestBid, "from client", result.ClientId)
+		status = "over"
 	}
+
+	log.Printf("Auction %d is %s | Highest bid: %d from client %d\n",
+		result.AuctionId, status, result.HighestBid, result.ClientId)
+}
+
+func readIdFromUser() int32 {
+	log.Println("Please enter a unique id")
+	for {
+		input := readFromUser()
+		val, err := strconv.Atoi(input)
+		if err == nil && val > 0 {
+			return int32(val)
+		}
+		log.Println("Invalid id value, must be a positive integer")
+	}
+}
+
+func readFromUser() string {
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
+}
+
+func nextLamport() int64 {
+	lamMutex.Lock()
+	defer lamMutex.Unlock()
+	lamport++
+	return lamport
 }

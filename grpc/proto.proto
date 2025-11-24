@@ -4,10 +4,12 @@ option go_package = "DSMA5/grpc/proto";
 message bid {
   int32 clientId = 1;
   int32 amount = 2;
+  int64 lamport = 3;
 }
 
 message ack {
   string outcome = 1;
+  int64 lamport = 2;
 }
 
 message result {
@@ -22,8 +24,9 @@ message memoryState {
   int32 auctionClientId = 2;
   int32 auctionHighestBid = 3;
   bool auctionIsOver = 4;
+  int64 lamport = 5;
+  string responseOutcome = 6;
 }
-
 
 message empty {}
 

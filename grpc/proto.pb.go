@@ -25,6 +25,7 @@ type Bid struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      int32                  `protobuf:"varint,1,opt,name=clientId,proto3" json:"clientId,omitempty"`
 	Amount        int32                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Lamport       int64                  `protobuf:"varint,3,opt,name=lamport,proto3" json:"lamport,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,9 +74,17 @@ func (x *Bid) GetAmount() int32 {
 	return 0
 }
 
+func (x *Bid) GetLamport() int64 {
+	if x != nil {
+		return x.Lamport
+	}
+	return 0
+}
+
 type Ack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Outcome       string                 `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	Lamport       int64                  `protobuf:"varint,2,opt,name=lamport,proto3" json:"lamport,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -115,6 +124,13 @@ func (x *Ack) GetOutcome() string {
 		return x.Outcome
 	}
 	return ""
+}
+
+func (x *Ack) GetLamport() int64 {
+	if x != nil {
+		return x.Lamport
+	}
+	return 0
 }
 
 type Result struct {
@@ -191,6 +207,8 @@ type MemoryState struct {
 	AuctionClientId   int32                  `protobuf:"varint,2,opt,name=auctionClientId,proto3" json:"auctionClientId,omitempty"`
 	AuctionHighestBid int32                  `protobuf:"varint,3,opt,name=auctionHighestBid,proto3" json:"auctionHighestBid,omitempty"`
 	AuctionIsOver     bool                   `protobuf:"varint,4,opt,name=auctionIsOver,proto3" json:"auctionIsOver,omitempty"`
+	Lamport           int64                  `protobuf:"varint,5,opt,name=lamport,proto3" json:"lamport,omitempty"`
+	ResponseOutcome   string                 `protobuf:"bytes,6,opt,name=responseOutcome,proto3" json:"responseOutcome,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -253,6 +271,20 @@ func (x *MemoryState) GetAuctionIsOver() bool {
 	return false
 }
 
+func (x *MemoryState) GetLamport() int64 {
+	if x != nil {
+		return x.Lamport
+	}
+	return 0
+}
+
+func (x *MemoryState) GetResponseOutcome() string {
+	if x != nil {
+		return x.ResponseOutcome
+	}
+	return ""
+}
+
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -293,24 +325,28 @@ var File_proto_proto protoreflect.FileDescriptor
 
 const file_proto_proto_rawDesc = "" +
 	"\n" +
-	"\vproto.proto\"9\n" +
+	"\vproto.proto\"S\n" +
 	"\x03bid\x12\x1a\n" +
 	"\bclientId\x18\x01 \x01(\x05R\bclientId\x12\x16\n" +
-	"\x06amount\x18\x02 \x01(\x05R\x06amount\"\x1f\n" +
+	"\x06amount\x18\x02 \x01(\x05R\x06amount\x12\x18\n" +
+	"\alamport\x18\x03 \x01(\x03R\alamport\"9\n" +
 	"\x03ack\x12\x18\n" +
-	"\aoutcome\x18\x01 \x01(\tR\aoutcome\"\x88\x01\n" +
+	"\aoutcome\x18\x01 \x01(\tR\aoutcome\x12\x18\n" +
+	"\alamport\x18\x02 \x01(\x03R\alamport\"\x88\x01\n" +
 	"\x06result\x12\x1a\n" +
 	"\bclientId\x18\x01 \x01(\x05R\bclientId\x12\x1e\n" +
 	"\n" +
 	"highestBid\x18\x02 \x01(\x05R\n" +
 	"highestBid\x12\x1c\n" +
 	"\tauctionId\x18\x03 \x01(\x05R\tauctionId\x12$\n" +
-	"\rauctionIsOver\x18\x04 \x01(\bR\rauctionIsOver\"\xa9\x01\n" +
+	"\rauctionIsOver\x18\x04 \x01(\bR\rauctionIsOver\"\xed\x01\n" +
 	"\vmemoryState\x12\x1c\n" +
 	"\tauctionId\x18\x01 \x01(\x05R\tauctionId\x12(\n" +
 	"\x0fauctionClientId\x18\x02 \x01(\x05R\x0fauctionClientId\x12,\n" +
 	"\x11auctionHighestBid\x18\x03 \x01(\x05R\x11auctionHighestBid\x12$\n" +
-	"\rauctionIsOver\x18\x04 \x01(\bR\rauctionIsOver\"\a\n" +
+	"\rauctionIsOver\x18\x04 \x01(\bR\rauctionIsOver\x12\x18\n" +
+	"\alamport\x18\x05 \x01(\x03R\alamport\x12(\n" +
+	"\x0fresponseOutcome\x18\x06 \x01(\tR\x0fresponseOutcome\"\a\n" +
 	"\x05empty2~\n" +
 	"\aReplica\x12\x18\n" +
 	"\x04Ping\x12\x06.empty\x1a\x06.empty\"\x00\x12\x13\n" +
